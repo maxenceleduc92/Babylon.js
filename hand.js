@@ -16,9 +16,9 @@ var HANDJS = HANDJS || {};
             var n = 0;
             if (arguments.length > 0) {
                 n = Number(arguments[1]);
-                if (n !== n) { // shortcut for verifying if it's NaN
+                if (n != n) { // shortcut for verifying if it's NaN
                     n = 0;
-                } else if (n !== 0 && n !== Infinity && n !== -Infinity) {
+                } else if (n != 0 && n != Infinity && n != -Infinity) {
                     n = (n > 0 || -1) * Math.floor(Math.abs(n));
                 }
             }
@@ -41,7 +41,7 @@ var HANDJS = HANDJS || {};
                 throw new TypeError();
             for (var i = 0; i < this.length; i++)
                 method.call(thisArg, this[i], i, this);
-        };
+        }
     }
 	// Polyfilling trim for old browsers
 	if (!String.prototype.trim) {
@@ -148,7 +148,7 @@ var HANDJS = HANDJS || {};
             else if (sourceEvent.button !== undefined) {
                 button = sourceEvent.button;
             }
-            evObj.pressure = (button === 0) ? 0 : 0.5;
+            evObj.pressure = (button == 0) ? 0 : 0.5;
         }
 
 
@@ -251,7 +251,7 @@ var HANDJS = HANDJS || {};
 
     var checkEventRegistration = function (node, eventName) {
         return node.__handjsGlobalRegisteredEvents && node.__handjsGlobalRegisteredEvents[eventName];
-    };
+    }
     var findEventRegisteredNode = function (node, eventName) {
         while (node && !checkEventRegistration(node, eventName))
             node = node.parentNode;
@@ -315,7 +315,7 @@ var HANDJS = HANDJS || {};
             if (item.__handjsRegisteredEvents.indexOf(name) !== -1) {
                 item.__handjsRegisteredEvents[name]--;
 
-                if (item.__handjsRegisteredEvents[name] !== 0) {
+                if (item.__handjsRegisteredEvents[name] != 0) {
                     return;
                 }
             }
@@ -371,7 +371,7 @@ var HANDJS = HANDJS || {};
 
         var customAddEventListener = function (name, func, capture) {
             // Branch when a PointerXXX is used
-            if (supportedEventsNames.indexOf(name) !== -1) {
+            if (supportedEventsNames.indexOf(name) != -1) {
                 setTouchAware(this, name, true);
             }
 
@@ -395,7 +395,7 @@ var HANDJS = HANDJS || {};
 
         var customRemoveEventListener = function (name, func, capture) {
             // Release when a PointerXXX is used
-            if (supportedEventsNames.indexOf(name) !== -1) {
+            if (supportedEventsNames.indexOf(name) != -1) {
                 setTouchAware(this, name, false);
             }
 
@@ -468,13 +468,26 @@ var HANDJS = HANDJS || {};
         // Result: Blocking Mouse Events for 700ms.
     }
 
-    function getFirstCommonNode(x, y) {
-        while (x) {
-            if (x.contains(y))
-                return x;
-            x = x.parentNode;
+    function getDomUpperHierarchy(node) {
+        var nodes = [];
+        if (node) {
+            nodes.unshift(node);
+            while (node.parentNode) {
+                nodes.unshift(node.parentNode);
+                node = node.parentNode;
+            }
         }
-        return null;
+        return nodes;
+    }
+
+    function getFirstCommonNode(node1, node2) {
+        var parents1 = getDomUpperHierarchy(node1);
+        var parents2 = getDomUpperHierarchy(node2);
+
+        var lastmatch = null
+        while (parents1.length > 0 && parents1[0] == parents2.shift())
+            lastmatch = parents1.shift();
+        return lastmatch;
     }
 
     //generateProxy receives a node to dispatch the event
@@ -482,7 +495,7 @@ var HANDJS = HANDJS || {};
         var commonParent = getFirstCommonNode(currentTarget, relatedTarget);
         var node = currentTarget;
         var nodelist = [];
-        while (node && node !== commonParent) {//target range: this to the direct child of parent relatedTarget
+        while (node && node != commonParent) {//target range: this to the direct child of parent relatedTarget
             if (checkEventRegistration(node, "pointerenter")) //check if any parent node has pointerenter
                 nodelist.push(node);
             node = node.parentNode;
@@ -495,7 +508,7 @@ var HANDJS = HANDJS || {};
     function dispatchPointerLeave(currentTarget, relatedTarget, generateProxy) {
         var commonParent = getFirstCommonNode(currentTarget, relatedTarget);
         var node = currentTarget;
-        while (node && node !== commonParent) {//target range: this to the direct child of parent relatedTarget
+        while (node && node != commonParent) {//target range: this to the direct child of parent relatedTarget
             if (checkEventRegistration(node, "pointerleave"))//check if any parent node has pointerleave
                 generateProxy(node);
             node = node.parentNode;
@@ -561,7 +574,7 @@ var HANDJS = HANDJS || {};
                         //pointerenter should not be bubbled
                         dispatchPointerEnter(touchPoint.target, null, function (targetNode) {
                             generateTouchEventProxy("pointerenter", touchPoint, targetNode, eventObject, false);
-                        });
+                        })
 
                         generateTouchEventProxyIfRegistered("pointerdown", touchPoint, touchPoint.target, eventObject, true);
                     }
@@ -579,7 +592,7 @@ var HANDJS = HANDJS || {};
                         //pointerleave should not be bubbled
                         dispatchPointerLeave(currentTarget, null, function (targetNode) {
                             generateTouchEventProxy("pointerleave", touchPoint, targetNode, eventObject, false);
-                        });
+                        })
                     }
                     setTouchTimer();
                 });
@@ -620,7 +633,7 @@ var HANDJS = HANDJS || {};
                             if (!newTarget.contains(currentTarget)) { // Leave must be called if the new target is not the parent of the current
                                 dispatchPointerEnter(newTarget, currentTarget, function (targetNode) {
                                     generateTouchEventProxy("pointerenter", touchPoint, targetNode, eventObject, false, currentTarget);
-                                });
+                                })
                             }
                         }
                         previousTargets[touchPoint.identifier] = newTarget;
@@ -651,14 +664,14 @@ var HANDJS = HANDJS || {};
             navigator.maxTouchPoints = navigator.msMaxTouchPoints;
         }
     }
-})();
-(function () {
+
     // Handling touch-action css rule
     if (document.styleSheets && document.addEventListener) {
         document.addEventListener("DOMContentLoaded", function () {
-            if (document.body.style.touchAction !== undefined)
+            if (HANDJS.doNotProcessCSS || document.body.style.touchAction !== undefined) {//Chrome is trying to implement touch-action before Pointer Events listeners
                 return;
-
+            }
+            
             var globalRegex = new RegExp(".+?{.*?}", "m");
             var selectorRegex = new RegExp(".+?{", "m");
             var filterStylesheet = function (unfilteredSheet) {
@@ -671,7 +684,7 @@ var HANDJS = HANDJS || {};
                 var selectorText = selectorRegex.exec(block)[0].replace("{", "").trim();
 
                 // Checking if the user wanted to deactivate the default behavior
-                if (block.replace(/\s/g, "").indexOf("touch-action:none") !== -1) {
+                if (block.replace(/\s/g, "").indexOf("touch-action:none") != -1) {
                     var elements = document.querySelectorAll(selectorText);
 
                     for (var elementIndex = 0; elementIndex < elements.length; elementIndex++) {
@@ -686,7 +699,7 @@ var HANDJS = HANDJS || {};
                     }
                 }
                 return unfilteredSheet;
-            };
+            }
             var processStylesheet = function (unfilteredSheet) {
                 if (window.setImmediate) {//not blocking UI interaction for a long time
                     if (unfilteredSheet)
@@ -702,7 +715,7 @@ var HANDJS = HANDJS || {};
                 for (var index = 0; index < document.styleSheets.length; index++) {
                     var sheet = document.styleSheets[index];
 
-                    if (sheet.href === undefined) { // it is an inline style
+                    if (sheet.href == undefined) { // it is an inline style
                         continue;
                     }
 
@@ -730,4 +743,5 @@ var HANDJS = HANDJS || {};
             }
         }, false);
     }
-});
+
+})();
